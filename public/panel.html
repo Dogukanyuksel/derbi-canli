@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derbi Canlı — Panel</title>
+<style>
+  :root { --bg: #0b1020; --card: #131a2e; --line: #243049; --fg: #e8ecf5; --mut: #8a96b0; --acc: #22d3ee; --bad: #ef4444; --ok: #22c55e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 2; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  nav button { background: none; border: 0; color: var(--mut); padding: 8px 14px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600; }
+  nav button.on { background: var(--card); color: var(--fg); }
+  .status { margin-left: auto; font-size: 13px; color: var(--mut); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--mut); margin-right: 6px; vertical-align: middle; }
+  main { max-width: 1180px; margin: 0 auto; padding: 22px; }
+  section { display: none; } section.on { display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card p.hint { color: var(--mut); margin: -4px 0 12px; font-size: 13px; }
+  label { display: block; color: var(--mut); font-size: 12px; font-weight: 600; margin: 8px 0 4px; }
+  input, select, textarea { width: 100%; background: #0b1224; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+  input[type=color] { padding: 2px; height: 36px; }
+  .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 0; }
+  .b { background: #1f2a44; color: var(--fg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; cursor: pointer; font: inherit; font-weight: 600; white-space: nowrap; }
+  .b:hover { border-color: var(--acc); }
+  .b.p { background: var(--acc); color: #04121a; border-color: var(--acc); }
+  .b.r { color: #fecaca; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--mut); font-weight: 600; font-size: 12px; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; border: 1px solid #0006; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #1f2a44; color: var(--mut); }
+  .tag.live { background: #7f1d1d; color: #fff; } .tag.played { background: #14532d; color: #bbf7d0; }
+  .warn { background: #3b2a06; border: 1px solid #a16207; color: #fde68a; padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; font-size: 13px; }
+  .day { margin: 18px 0 6px; font-weight: 700; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #111827; border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px; opacity: 0; transition: .2s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  .previews { display: flex; gap: 16px; flex-wrap: wrap; align-items: start; }
+  .previews canvas { width: 300px; border-radius: 10px; border: 1px solid var(--line); background: #000; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  ol.legal li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ Derbi Canlı · Panel</h1>
+  <nav id="tabs">
+    <button data-t="test" class="on">Test</button>
+    <button data-t="teams">Takımlar</button>
+    <button data-t="fixture">Fikstür & Puan</button>
+    <button data-t="insta">Instagram</button>
+    <button data-t="settings">Ayarlar</button>
+  </nav>
+  <div class="status"><span class="dot" id="ttDot"></span><span id="ttText">TikTok: …</span> · <a href="/game.html" target="_blank" style="color:var(--acc)">Oyun ekranını aç ↗</a></div>
+</header>
+<main>
+
+<!-- ================= TEST ================= -->
+<section id="test" class="on">
+  <div class="card" style="margin-bottom:16px">
+    <h2>TikTok bağlantısı</h2>
+    <p class="hint">Canlı yayındaki hesabın kullanıcı adını yazın (şifre gerekmez). Bağlantı yalnızca okur: yorum, beğeni ve hediyeler oyuna akar, TikTok'a hiçbir şey yazılmaz. Yayın kapalıysa açılana kadar bekler.</p>
+    <div class="row">
+      <div style="flex:2"><label>Kullanıcı adı</label><input id="ttUser" placeholder="@kullaniciadi"></div>
+      <div style="flex:2"><label>Euler Stream API anahtarı (gerekirse)</label><input id="ttKey" type="password" placeholder="eulerstream.com'dan alınır · sunucuda yalnız bellekte tutulur"></div>
+      <div style="flex:0 0 auto" class="btns"><button class="b p" onclick="ttConnect()">Bağlan</button><button class="b r" onclick="api('/api/tiktok',{stop:true})">Bağlantıyı kes</button></div>
+    </div>
+    <div id="ttInfo" class="mono" style="margin-top:10px;color:var(--mut)"></div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h2>İzleyici olayı gönder</h2>
+      <p class="hint">Olaylar gerçek TikTok olaylarıyla aynı yoldan oyuna gider; TikTok'a hiçbir şey gönderilmez.</p>
+      <div class="row">
+        <div><label>Kullanıcı</label><input id="tUser" value="test_izleyici"></div>
+        <div><label>Takım (yorum)</label><select id="tTeam"></select></div>
+      </div>
+      <div class="btns" style="margin-top:10px">
+        <button class="b" onclick="sendJoin()">💬 Takıma katıl (yorum)</button>
+        <button class="b" onclick="ev({type:'like',count:10})">❤️ 10 beğeni</button>
+      </div>
+      <label>Hediye</label>
+      <div class="btns">
+        <button class="b" onclick="gift('Rose',1)">🌹 Gül (1)</button>
+        <button class="b" onclick="gift('Finger Heart',5)">💖 Kalp (5)</button>
+        <button class="b" onclick="gift('Doughnut',30)">🍩 Donut (30)</button>
+        <button class="b" onclick="gift('Hand Hearts',100)">🙌 100 · büyük atak</button>
+        <button class="b" onclick="gift('Galaxy',1000)">🌌 1000 · penaltı</button>
+        <button class="b" onclick="gift('Rose',1,15)">🌹 x15 seri</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Kalabalık simülasyonu</h2>
+      <p class="hint">Çok sayıda izleyici aynı anda yazar, beğenir ve hediye atar.</p>
+      <div class="btns">
+        <button class="b" onclick="crowd(40,0.5)">👥 40 izleyici, dengeli</button>
+        <button class="b" onclick="crowd(40,0.85)">👥 40 izleyici, ev sahibi ağır</button>
+        <button class="b" onclick="crowd(40,0.15)">👥 40 izleyici, deplasman ağır</button>
+        <button class="b" onclick="crowd(150,0.5)">⚡ 150 olay aynı anda</button>
+      </div>
+      <label>Sürekli demo akışı</label>
+      <div class="btns">
+        <button class="b" id="demoBtn" onclick="toggleDemo()">▶ Demo akışını başlat</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Maç kontrolü</h2>
+      <p class="hint">Yayın sırasında acil durumlar ve görsel testler için.</p>
+      <div class="btns">
+        <button class="b" onclick="ctl('goal0')">⚽ Ev sahibi gol denemesi</button>
+        <button class="b" onclick="ctl('goal1')">⚽ Deplasman gol denemesi</button>
+        <button class="b" onclick="ctl('yellow')">🟨 Sarı kart</button>
+        <button class="b" onclick="ctl('red')">🟥 Kırmızı kart</button>
+        <button class="b" onclick="ctl('endhalf')">⏱ Devreyi bitir</button>
+        <button class="b r" onclick="ctl('skip')">⏭ Maçı bitir (sonuç kaydedilir)</button>
+        <button class="b" onclick="ctl('reload')">🔄 Oyun ekranını yenile</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TAKIMLAR ================= -->
+<section id="teams">
+  <div id="teamWarn"></div>
+  <div class="card">
+    <h2>Takımlar</h2>
+    <p class="hint">Kod, izleyicinin yoruma yazacağı kısaltmadır (2–4 harf). Gerçek kulüp adı, logosu ve forma deseni kullanmayın: marka hakkı ihlali olur ve yayın kapatılabilir.</p>
+    <table><thead><tr><th>Ad</th><th>Kod</th><th>Renk 1</th><th>Renk 2</th><th></th></tr></thead><tbody id="teamRows"></tbody></table>
+    <div class="btns" style="margin-top:12px">
+      <button class="b" onclick="addTeamRow()">+ Takım ekle</button>
+      <button class="b p" onclick="saveTeams()">Kaydet</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FİKSTÜR ================= -->
+<section id="fixture">
+  <div class="grid">
+    <div class="card">
+      <h2>Haftalık fikstür oluştur</h2>
+      <p class="hint">Çift devreli lig, 7 güne yayılır. Yeni fikstür oluşturulunca önceki hafta arşive geçer.</p>
+      <div class="row">
+        <div><label>Hafta başlangıcı</label><input type="date" id="fxStart"></div>
+        <div><label>Günlük maç sayısı</label><input type="number" id="fxPer" min="1" max="60" value="8"></div>
+      </div>
+      <div class="btns" style="margin-top:12px"><button class="b p" onclick="genFixture()">Fikstürü oluştur</button>
+        <button class="b" onclick="api('/api/fixture/reset-live',{}).then(load)">Yarım kalan maçı sıraya geri al</button></div>
+    </div>
+    <div class="card">
+      <h2>Maç ekle (biz belirleriz)</h2>
+      <p class="hint">"Sıradaki maç yap" seçilirse o günün ilk oynanacak maçı olur.</p>
+      <div class="row">
+        <div><label>Ev sahibi</label><select id="addHome"></select></div>
+        <div><label>Deplasman</label><select id="addAway"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Tarih</label><input type="date" id="addDate"></div>
+        <div><label>Sıra</label><select id="addFirst"><option value="0">Günün sonuna ekle</option><option value="1">Sıradaki maç yap</option></select></div>
+      </div>
+      <div class="btns" style="margin-top:12px"><button class="b p" onclick="addMatch()">Ekle</button></div>
+    </div>
+  </div>
+  <div class="grid" style="margin-top:16px">
+    <div class="card"><h2>Puan durumu (bu hafta)</h2><table id="stTable"></table></div>
+    <div class="card"><h2>Maçlar</h2><div id="fxList"></div></div>
+  </div>
+</section>
+
+<!-- ================= INSTAGRAM ================= -->
+<section id="insta">
+  <div class="card">
+    <h2>Instagram görselleri</h2>
+    <p class="hint">Görseller 1080×1350 (gönderi) ve 1080×1920 (hikâye) olarak üretilir. Önerim: her maç sonucu <b>hikâye</b>, gün sonunda <b>sonuçlar + puan durumu</b> gönderisi, hafta başında <b>fikstür</b> gönderisi. Günde 50 gönderi hesabı spam'e düşürür.</p>
+    <div class="row">
+      <div><label>Gün</label><input type="date" id="igDay"></div>
+      <div><label>Hesap adı (görselde)</label><input id="igHandle" placeholder="@hesabiniz"></div>
+    </div>
+    <div class="btns" style="margin-top:12px">
+      <button class="b" onclick="drawLastResult()">Son maç sonucu (hikâye)</button>
+      <button class="b" onclick="drawDay('results')">Günün sonuçları</button>
+      <button class="b" onclick="drawDay('fixture')">Günün fikstürü</button>
+      <button class="b" onclick="drawStandings()">Puan durumu</button>
+    </div>
+    <div class="previews" id="igOut" style="margin-top:16px"></div>
+    <label>Açıklama metni (kopyala)</label>
+    <textarea id="igCaption" rows="5"></textarea>
+  </div>
+</section>
+
+<!-- ================= AYARLAR ================= -->
+<section id="settings">
+  <div class="grid">
+    <div class="card">
+      <h2>Maç süresi</h2>
+      <p class="hint">Ekranda 90 dakika akar; gerçek süre buradan ayarlanır. Varsayılanla bir maç ≈ 8,5 dk sürer (saatte ~7 maç).</p>
+      <div class="row">
+        <div><label>Devre (sn)</label><input type="number" id="sHalf"></div>
+        <div><label>Devre arası (sn)</label><input type="number" id="sHt"></div>
+      </div>
+      <div class="row">
+        <div><label>Maç sonu ekranı (sn)</label><input type="number" id="sFt"></div>
+        <div><label>Maç öncesi (sn)</label><input type="number" id="sIntro"></div>
+      </div>
+      <label><input type="checkbox" id="sFriendly" style="width:auto"> Günün maçları bitince hazırlık maçı oynat (puana sayılmaz)</label>
+      <div class="btns" style="margin-top:12px"><button class="b p" onclick="saveSettings()">Kaydet</button></div>
+    </div>
+    <div class="card">
+      <h2>Panel şifresi</h2>
+      <p class="hint">Sunucu ADMIN_KEY ile başlatıldıysa buraya yazın. Tarayıcıda saklanır.</p>
+      <input id="adminKey" type="password" placeholder="ADMIN_KEY">
+      <div class="btns" style="margin-top:12px"><button class="b" onclick="localStorage.adminKey=adminKey.value;toast('Kaydedildi')">Kaydet</button></div>
+    </div>
+    <div class="card">
+      <h2>OBS / TikTok LIVE Studio</h2>
+      <p class="hint">Tarayıcı kaynağı (Browser Source) olarak ekleyin.</p>
+      <div class="mono" id="obsUrl"></div>
+      <p class="hint" style="margin-top:8px">Genişlik 1080 · Yükseklik 1920 · "Sesi OBS üzerinden kontrol et" açık · FPS 60.</p>
+    </div>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+
+<script>
+let ST = null;
+const $ = id => document.getElementById(id);
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 2200); }
+async function api(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': localStorage.adminKey || '' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { toast(j.error || 'Hata'); throw new Error(j.error); }
+  return j;
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const teamOf = code => ST.teams.find(t => t.code === code) || { name: code, code, colors: ['#888', '#444'] };
+const chip = t => `<span class="chip" style="background:${t.colors[0]}"></span>`;
+const fmtDay = d => new Date(d + 'T12:00:00').toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === b.dataset.t));
+});
+
+async function load() {
+  ST = await (await fetch('/api/state')).json();
+  const opts = ST.teams.map(t => `<option value="${esc(t.code)}">${esc(t.code)} · ${esc(t.name)}</option>`).join('');
+  $('tTeam').innerHTML = opts; $('addHome').innerHTML = opts; $('addAway').innerHTML = opts;
+  if (ST.teams[1]) $('addAway').value = ST.teams[1].code;
+  $('fxStart').value ||= ST.today; $('addDate').value ||= ST.today; $('igDay').value ||= ST.today;
+  $('fxPer').value = ST.settings.matchesPerDay;
+  $('sHalf').value = ST.settings.halfSeconds; $('sHt').value = ST.settings.htSeconds; $('sFt').value = ST.settings.ftSeconds; $('sIntro').value = ST.settings.introSeconds;
+  $('sFriendly').checked = ST.settings.friendlyWhenIdle;
+  $('obsUrl').textContent = location.origin + '/game.html?obs';
+  $('adminKey').value = localStorage.adminKey || '';
+  renderTeams(); renderFixture(); setStatus(ST.tiktok);
+}
+function setStatus(t) {
+  const map = { connected: ['#22c55e', 'TikTok bağlı'], waiting: ['#f59e0b', 'TikTok: yayın bekleniyor'], connecting: ['#f59e0b', 'TikTok bağlanıyor'], error: ['#ef4444', 'TikTok hata'], off: ['#8a96b0', 'TikTok kapalı (test modu)'] };
+  const [c, txt] = map[t?.state] || map.off;
+  $('ttDot').style.background = c; $('ttText').textContent = txt + (t?.user ? ` · @${t.user}` : ''); $('ttText').title = t?.detail || '';
+  const n = t?.counts;
+  $('ttInfo').textContent = `${txt}${t?.user ? ' · @' + t.user : ''}${t?.detail ? ' · ' + t.detail : ''}${n ? ` · gelen: ${n.comment} yorum, ${n.like} beğeni, ${n.gift} hediye` : ''}`;
+  if (t?.user && !$('ttUser').value) $('ttUser').value = '@' + t.user;
+}
+async function ttConnect() { const u = $('ttUser').value.trim(); if (!u) return toast('Kullanıcı adı yazın'); await api('/api/tiktok', { username: u, eulerKey: $('ttKey').value }); $('ttKey').value = ''; toast('Bağlanılıyor…'); }
+
+// ---------- test
+const ev = (e) => api('/api/event', { user: $('tUser').value, nick: $('tUser').value, ...e });
+const sendJoin = () => ev({ type: 'comment', text: $('tTeam').value });
+const gift = (g, coins, count = 1) => ev({ type: 'gift', gift: g, coins, count });
+const ctl = a => api('/api/event', { type: 'control', action: a }).then(() => toast('Gönderildi'));
+function fakeUsers(n) { const b = ['ahmet', 'zeynep', 'mert', 'elif', 'can', 'ayse', 'burak', 'deniz', 'emre', 'selin', 'kaan', 'irem', 'yusuf', 'ece', 'baris', 'naz']; return Array.from({ length: n }, (_, i) => b[i % b.length] + '_' + (100 + Math.floor(Math.random() * 900))); }
+async function crowd(n, homeBias) {
+  if (!ST) return; const [h, a] = curTeams();
+  const evs = [];
+  for (const u of fakeUsers(n)) {
+    const code = Math.random() < homeBias ? h : a;
+    evs.push({ type: 'comment', user: u, nick: u, text: code });
+    evs.push({ type: 'like', user: u, nick: u, count: 1 + Math.floor(Math.random() * 20) });
+    if (Math.random() < 0.45) evs.push({ type: 'gift', user: u, nick: u, gift: 'Rose', coins: [1, 1, 5, 30][Math.floor(Math.random() * 4)], count: 1 + Math.floor(Math.random() * 4) });
+  }
+  await api('/api/event', evs); toast(`${evs.length} olay gönderildi`);
+}
+function curTeams() { const live = ST.fixture?.matches.find(m => m.status === 'live'); return live ? [live.home, live.away] : [ST.teams[0].code, ST.teams[1].code]; }
+let demoTimer = null;
+function toggleDemo() {
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; $('demoBtn').textContent = '▶ Demo akışını başlat'; return; }
+  $('demoBtn').textContent = '⏸ Demo akışını durdur';
+  demoTimer = setInterval(async () => {
+    await load().catch(() => {});
+    const [h, a] = curTeams(), u = fakeUsers(1)[0], r = Math.random(), code = Math.random() < 0.5 ? h : a;
+    const evs = [{ type: 'comment', user: u, nick: u, text: code }];
+    if (r < 0.6) evs.push({ type: 'like', user: u, nick: u, count: 5 });
+    else if (r < 0.97) evs.push({ type: 'gift', user: u, nick: u, gift: 'Rose', coins: [1, 5, 30][Math.floor(Math.random() * 3)], count: 1 + Math.floor(Math.random() * 3) });
+    else evs.push({ type: 'gift', user: u, nick: u, gift: 'Hand Hearts', coins: 100, count: 1 });
+    api('/api/event', evs).catch(() => {});
+  }, 1500);
+}
+
+// ---------- takımlar
+function renderTeams() {
+  $('teamWarn').innerHTML = ST.warnings.map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('');
+  $('teamRows').innerHTML = ST.teams.map(rowHtml).join('');
+}
+const rowHtml = t => `<tr><td><input class="tn" value="${esc(t.name)}" maxlength="32"></td><td style="width:90px"><input class="tc" value="${esc(t.code)}" maxlength="4"></td>
+  <td style="width:70px"><input type="color" class="c1" value="${t.colors[0]}"></td><td style="width:70px"><input type="color" class="c2" value="${t.colors[1]}"></td>
+  <td style="width:40px"><button class="b r" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+function addTeamRow() { $('teamRows').insertAdjacentHTML('beforeend', rowHtml({ name: 'Yeni Takım', code: 'YNI', colors: ['#3b82f6', '#ffffff'] })); }
+async function saveTeams() {
+  const teams = [...$('teamRows').querySelectorAll('tr')].map(tr => ({ name: tr.querySelector('.tn').value, code: tr.querySelector('.tc').value, colors: [tr.querySelector('.c1').value, tr.querySelector('.c2').value] }));
+  const j = await api('/api/teams', { teams }); toast(j.warnings?.length ? 'Kaydedildi — uyarıları okuyun' : 'Takımlar kaydedildi'); load();
+}
+
+// ---------- fikstür
+function renderFixture() {
+  $('stTable').innerHTML = `<thead><tr><th>#</th><th>Takım</th><th class="n">O</th><th class="n">G</th><th class="n">B</th><th class="n">M</th><th class="n">AV</th><th class="n">P</th></tr></thead><tbody>` +
+    ST.standings.map((s, i) => `<tr><td>${i + 1}</td><td>${chip(s)}${esc(s.name)}</td><td class="n">${s.o}</td><td class="n">${s.g}</td><td class="n">${s.b}</td><td class="n">${s.m}</td><td class="n">${s.ag - s.yg}</td><td class="n"><b>${s.p}</b></td></tr>`).join('') + '</tbody>';
+  if (!ST.fixture) { $('fxList').innerHTML = '<p class="hint">Henüz fikstür yok. Yukarıdan oluşturun; o zamana kadar hazırlık maçları oynanır.</p>'; return; }
+  const byDay = {};
+  for (const m of ST.fixture.matches) (byDay[m.date] ||= []).push(m);
+  $('fxList').innerHTML = Object.entries(byDay).map(([d, ms]) => `<div class="day">${fmtDay(d)}${d === ST.today ? ' · bugün' : ''}</div><table>` + ms.map(m => {
+    const h = teamOf(m.home), a = teamOf(m.away);
+    const tag = m.status === 'played' ? `<span class="tag played">${m.score[0]} - ${m.score[1]}</span>` : m.status === 'live' ? '<span class="tag live">CANLI</span>' : '<span class="tag">planlı</span>';
+    return `<tr><td>${chip(h)}${esc(h.name)}</td><td>${chip(a)}${esc(a.name)}</td><td>${tag}</td><td style="width:40px">${m.status === 'scheduled' ? `<button class="b r" onclick="delMatch('${m.id}')">✕</button>` : ''}</td></tr>`;
+  }).join('') + '</table>').join('');
+}
+async function genFixture() {
+  if (ST.fixture && !confirm('Mevcut fikstür arşive alınıp yenisi oluşturulacak. Devam?')) return;
+  await api('/api/fixture/generate', { weekStart: $('fxStart').value, perDay: Number($('fxPer').value) }); toast('Fikstür oluşturuldu'); load();
+}
+async function addMatch() { await api('/api/fixture/add', { home: $('addHome').value, away: $('addAway').value, date: $('addDate').value, first: $('addFirst').value === '1' }); toast('Maç eklendi'); load(); }
+async function delMatch(id) { await api('/api/fixture/delete', { id }); load(); }
+
+// ---------- ayarlar
+async function saveSettings() {
+  await api('/api/settings', { halfSeconds: +$('sHalf').value, htSeconds: +$('sHt').value, ftSeconds: +$('sFt').value, introSeconds: +$('sIntro').value, friendlyWhenIdle: $('sFriendly').checked });
+  toast('Ayarlar kaydedildi (sıradaki maçtan itibaren)'); load();
+}
+
+// ---------- Instagram görselleri
+function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function igBase(c, title, sub) {
+  const x = c.getContext('2d'), W = c.width, H = c.height;
+  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0b1228'); g.addColorStop(1, '#05070d'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.fillStyle = 'rgba(34,211,238,0.08)'; for (let i = 0; i < 12; i++) { x.fillRect(0, i * H / 12, W, H / 24); }
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#22d3ee'; x.font = '800 34px Segoe UI, sans-serif'; x.fillText('DERBİ CANLI · HAFTALIK LİG', W / 2, 90);
+  x.fillStyle = '#fff'; x.font = '900 72px Segoe UI, sans-serif'; x.fillText(title, W / 2, 175);
+  if (sub) { x.fillStyle = 'rgba(255,255,255,0.6)'; x.font = '600 32px Segoe UI, sans-serif'; x.fillText(sub, W / 2, 240); }
+  const handle = $('igHandle').value.trim();
+  x.fillStyle = 'rgba(255,255,255,0.45)'; x.font = '600 26px Segoe UI, sans-serif';
+  x.fillText(`${handle ? handle + ' · ' : ''}TikTok'ta canlı · takımlar kurgusaldır`, W / 2, H - 50);
+  return x;
+}
+function teamCell(x, t, cx, cy, align, maxW, size = 40) {
+  x.fillStyle = t.colors[0]; x.beginPath(); x.roundRect(align === 'left' ? cx : cx - 56, cy - 28, 56, 56, 12); x.fill();
+  x.fillStyle = t.colors[1]; x.fillRect(align === 'left' ? cx : cx - 56, cy + 12, 56, 16);
+  x.textAlign = align; x.fillStyle = '#fff'; x.font = `800 ${size}px Segoe UI, sans-serif`;
+  x.fillText(t.name, align === 'left' ? cx + 74 : cx - 74, cy, maxW);
+}
+function show(c, name) {
+  const out = $('igOut'); const wrap = document.createElement('div');
+  wrap.innerHTML = `<div class="btns" style="margin-top:6px"></div>`; wrap.prepend(c);
+  const a = document.createElement('a'); a.className = 'b'; a.textContent = '⬇ PNG indir'; a.download = name + '.png'; a.href = c.toDataURL('image/png'); a.style.textDecoration = 'none'; a.style.display = 'inline-block';
+  wrap.querySelector('.btns').append(a); out.prepend(wrap);
+}
+function caption(text) { const tags = '#futbol #derbi #canlıyayın #tiktoklive #haftalıklig'; $('igCaption').value = text + '\n\n' + tags; }
+
+function drawLastResult() {
+  const played = (ST.fixture?.matches || []).filter(m => m.status === 'played').sort((a, b) => (b.playedAt || '').localeCompare(a.playedAt || ''));
+  const m = played[0]; if (!m) return toast('Henüz oynanmış maç yok');
+  const c = canvas(1080, 1920), x = igBase(c, 'MAÇ SONUCU', fmtDay(m.date));
+  const h = teamOf(m.home), a = teamOf(m.away);
+  for (const [t, cx] of [[h, 270], [a, 810]]) {
+    x.save(); x.beginPath(); x.arc(cx, 640, 170, 0, 7); x.clip(); x.fillStyle = t.colors[0]; x.fillRect(cx - 170, 470, 340, 340);
+    x.fillStyle = t.colors[1]; for (let i = -3; i < 4; i += 2) x.fillRect(cx + i * 48 - 24, 470, 48, 340); x.restore();
+    x.lineWidth = 10; x.strokeStyle = '#fff'; x.beginPath(); x.arc(cx, 640, 170, 0, 7); x.stroke();
+    x.fillStyle = 'rgba(0,0,0,0.55)'; x.beginPath(); x.roundRect(cx - 110, 605, 220, 70, 16); x.fill();
+    x.fillStyle = '#fff'; x.font = '900 52px Segoe UI'; x.textAlign = 'center'; x.fillText(t.code, cx, 642);
+    x.font = '800 40px Segoe UI'; x.fillText(t.name, cx, 870, 440);
+  }
+  x.font = '900 210px Segoe UI'; x.fillStyle = '#fff'; x.fillText(`${m.score[0]}-${m.score[1]}`, 540, 1070);
+  x.font = '700 36px Segoe UI'; x.fillStyle = 'rgba(255,255,255,0.8)';
+  (m.scorers || []).slice(0, 8).forEach((s, i) => { x.textAlign = s.team === m.home ? 'left' : 'right'; x.fillText(`⚽ ${s.name} ${s.minute}`, s.team === m.home ? 120 : 960, 1230 + Math.floor(i / 1) * 52); });
+  if (m.mom) { x.textAlign = 'center'; x.fillStyle = '#fde047'; x.font = '800 34px Segoe UI'; x.fillText('MAÇIN OYUNCUSU', 540, 1660); x.fillStyle = '#fff'; x.font = '900 54px Segoe UI'; x.fillText(m.mom, 540, 1725); }
+  show(c, `sonuc-${m.home}-${m.away}`);
+  caption(`${h.name} ${m.score[0]}-${m.score[1]} ${a.name}${m.mom ? `\nMaçın oyuncusu: ${m.mom}` : ''}\nSıradaki maç için canlı yayına gel, takımını seç!`);
+}
+function drawDay(kind) {
+  const day = $('igDay').value;
+  let ms = (ST.fixture?.matches || []).filter(m => m.date === day);
+  if (kind === 'results') ms = ms.filter(m => m.status === 'played');
+  if (!ms.length) return toast(kind === 'results' ? 'Bu gün oynanmış maç yok' : 'Bu gün için maç yok');
+  const per = 12, pages = Math.ceil(ms.length / per);
+  for (let p = pages - 1; p >= 0; p--) {
+    const c = canvas(1080, 1350), x = igBase(c, kind === 'results' ? 'GÜNÜN SONUÇLARI' : 'GÜNÜN FİKSTÜRÜ', fmtDay(day) + (pages > 1 ? ` · ${p + 1}/${pages}` : ''));
+    ms.slice(p * per, p * per + per).forEach((m, i) => {
+      const y = 320 + i * 80, h = teamOf(m.home), a = teamOf(m.away);
+      x.fillStyle = i % 2 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)'; x.beginPath(); x.roundRect(50, y - 34, 980, 68, 14); x.fill();
+      teamCell(x, h, 70, y, 'left', 320, 30); teamCell(x, a, 1010, y, 'right', 320, 30);
+      x.textAlign = 'center'; x.fillStyle = m.status === 'played' ? '#fff' : '#22d3ee'; x.font = '900 40px Segoe UI';
+      x.fillText(m.status === 'played' ? `${m.score[0]} - ${m.score[1]}` : `${p * per + i + 1}. maç`, 540, y);
+    });
+    show(c, `${kind}-${day}-${p + 1}`);
+  }
+  const lines = ms.map(m => `${teamOf(m.home).name} ${m.status === 'played' ? m.score.join('-') : 'vs'} ${teamOf(m.away).name}`).join('\n');
+  caption(`${kind === 'results' ? 'Günün sonuçları' : 'Günün fikstürü'} · ${fmtDay(day)}\n${lines}`);
+}
+function drawStandings() {
+  const c = canvas(1080, 1350), x = igBase(c, 'PUAN DURUMU', ST.fixture ? `Hafta: ${fmtDay(ST.fixture.weekStart)}` : '');
+  x.font = '700 26px Segoe UI'; x.fillStyle = 'rgba(255,255,255,0.55)';
+  const cols = [[620, 'O'], [700, 'G'], [770, 'B'], [840, 'M'], [920, 'AV'], [1000, 'P']];
+  for (const [cx, l] of cols) { x.textAlign = 'center'; x.fillText(l, cx, 300); }
+  ST.standings.slice(0, 12).forEach((s, i) => {
+    const y = 360 + i * 76;
+    x.fillStyle = i === 0 ? 'rgba(253,224,71,0.15)' : i % 2 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)'; x.beginPath(); x.roundRect(50, y - 32, 980, 64, 14); x.fill();
+    x.textAlign = 'center'; x.fillStyle = '#fff'; x.font = '900 32px Segoe UI'; x.fillText(i + 1, 90, y);
+    teamCell(x, s, 130, y, 'left', 330, 30);
+    x.font = '800 32px Segoe UI'; x.textAlign = 'center';
+    [s.o, s.g, s.b, s.m, s.ag - s.yg, s.p].forEach((v, k) => { x.fillStyle = k === 5 ? '#fde047' : '#fff'; x.fillText(v, cols[k][0], y); });
+  });
+  show(c, 'puan-durumu');
+  caption('Haftalık lig puan durumu\n' + ST.standings.map((s, i) => `${i + 1}. ${s.name} — ${s.p} puan`).join('\n'));
+}
+
+// canlı durum
+const es = new EventSource('/events');
+es.onmessage = m => { const e = JSON.parse(m.data); if (e.type === 'status') setStatus(e.tiktok); if (e.type === 'fixture-updated') load(); };
+load();
+</script>
+</body>
+</html>

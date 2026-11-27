@@ -1,0 +1,16 @@
+{
+  "name": "derbi-canli",
+  "version": "0.1.0",
+  "description": "Hediye ve beğeniyle akan, yapay zekâ spikerli canlı yayın futbol oyunu",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "optionalDependencies": {
+    "tiktok-live-connector": "^2.0.0"
+  }
+}
