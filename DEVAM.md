@@ -1,6 +1,8 @@
 # Devam notu (27.11.2026)
 
-Bu dal (`yeni-kurallar`) yarım kalmış bir geliştirmedir. **`main` dalı çalışan ilk prototiptir.** Yeni oturumda Claude'a şunu söyleyin: "DEVAM.md'yi oku ve kaldığın yerden devam et."
+Bu dal (`yeni-kurallar`) yarım kalmış bir geliştirmedir. **`main` dalı çalışan ilk prototiptir.** Yeni oturumda Claude'a şunu söyleyin: "PROJE.md ve DEVAM.md'yi oku, kaldığın yerden devam et."
+
+Tüm kurallar, gerekçeler, hukuki sınırlar ve çalışma tarzı **`PROJE.md`**'dedir. Bu dosya sadece kısa durum ve iş listesidir.
 
 ## Durum
 - [x] `server.js` yeni kurallara göre yeniden yazıldı. Henüz test edilmedi.
